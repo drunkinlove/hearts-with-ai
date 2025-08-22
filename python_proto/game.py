@@ -26,9 +26,9 @@ class Game:
         self.player_scores = {player_id: 0 for player_id in self.player_ids}
 
         self.table = Table(player_ids=[])
-        self.round_no = -1
 
         # round data
+        self.round_no = -1
         self.round = Round(-1, pass_direction={})
         self.old_rounds: list[Round] = []
         print(f"Starting game with {self.player_ids}")
@@ -145,13 +145,11 @@ class Game:
             if (
                 sum(
                     [
-                        1
-                        for suit, rank in self.table.cards_taken[player_id]
-                        if suit == "♥"
+                        self.table.card_values[card]
+                        for card in self.table.cards_taken[player_id]
                     ]
                 )
-                == 13
-                and Card("♠", "Q") in self.table.cards_taken[player_id]
+                == 26
             ):
                 return player_id
         return None
@@ -174,7 +172,7 @@ class Game:
 
     def _game_continues(self) -> bool:
         if (
-            any([v > 100 for v in self.player_scores.values()])
+            any([v >= 100 for v in self.player_scores.values()])
             and list(self.player_scores.values()).count(
                 min(self.player_scores.values())
             )
