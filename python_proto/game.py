@@ -4,37 +4,38 @@ from players import Player, DumbPlayer, HumanPlayer, AIPlayer
 from llm_client import GeminiClient, CerebrasClient
 from collections import namedtuple
 from table import Table, Card, Play
-from typing import Optional
+from typing import Optional, Type
 
 
 class Round:
     def __init__(self, no: int, pass_direction: dict[str, str]) -> None:
         self.no = no
-        self.current_trick = []
+        self.current_trick: list[Play] = []
         self.trick_no = 0
-        self.leads_trick = None
+        self.leads_trick: Optional[str] = None
         self.hearts_broken = False
         self.queen_of_spades_broken = True  # False if no < 1 else True
         self.pass_direction = pass_direction
-        self.player_moonshot = None
+        self.player_moonshot: Optional[str] = None
 
 
 class Game:
-    def __init__(self, player_ids: list[str], players: list[Player]) -> None:
+    def __init__(self, player_ids: list[str], players: dict[str, Player]) -> None:
         self.player_ids = player_ids  # order matters
         self.players = players
         self.player_scores = {player_id: 0 for player_id in self.player_ids}
 
-        self.table = None
-
+        self.table = Table(player_ids=[])
         self.round_no = -1
 
         # round data
-        self.round = None
-        self.old_rounds = []
+        self.round = Round(-1, pass_direction={})
+        self.old_rounds: list[Round] = []
         print(f"Starting game with {self.player_ids}")
 
-    def _calculate_whose_move(self) -> None:
+    def _calculate_whose_move(self) -> str:
+        assert isinstance(self.round.leads_trick, str)
+
         return self.player_ids[
             (
                 self.player_ids.index(self.round.leads_trick)
@@ -43,8 +44,8 @@ class Game:
             % 4
         ]
 
-    def _pass_cards(self, passed_by_player: dict[str, dict[str, set[Card]]]) -> None:
-        updates = {
+    def _pass_cards(self, passed_by_player: dict[str, set[Card]]) -> None:
+        updates: dict[str, dict[str, set[Card]]] = {
             player_id: {"added": set(), "removed": set()}
             for player_id in self.player_ids
         }
@@ -80,7 +81,7 @@ class Game:
         for player_id in self.player_ids:
             self.table.deal_cards(13, player_id)
 
-    def _filter_illegal_options(self, hand: set[Card], player_id: str) -> None:
+    def _filter_illegal_options(self, hand: set[Card], player_id: str) -> set[Card]:
         hand = hand.copy()
 
         if Card("♣", "2") in hand:
@@ -153,6 +154,7 @@ class Game:
                 and Card("♠", "Q") in self.table.cards_taken[player_id]
             ):
                 return player_id
+        return None
 
     def _finish_round(self) -> None:
         player_moonshot = self._check_moonshot()
@@ -238,9 +240,9 @@ if __name__ == "__main__":
     llm_client = CerebrasClient()
 
     for i in range(10):
-        player_classes = [AIPlayer, DumbPlayer, DumbPlayer, DumbPlayer]
-        player_ids = ["Tom", "Mary", "Holly", "Joslyn"]
-        players = {}
+        player_classes: list[Type[Player]] = [AIPlayer, DumbPlayer, DumbPlayer, DumbPlayer]
+        player_ids: list[str] = ["Tom", "Mary", "Holly", "Joslyn"]
+        players: dict[str, Player] = {}
         for player_id, player_class in zip(player_ids, player_classes):
             players[player_id] = player_class(
                 player_id=player_id,

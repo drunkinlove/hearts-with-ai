@@ -16,14 +16,13 @@ class Table:
     def __init__(self, player_ids: list[str]) -> None:
         self.suits = {"♠", "♣", "♦", "♥"}
         self.ranks = [str(i) for i in list(range(2, 11)) + ["J", "Q", "K", "A"]]
-
+        
         self.deck = {Card(suit, rank) for suit in self.suits for rank in self.ranks}
-        self.cards_taken = {player_id: set() for player_id in player_ids}
+        self.card_values = {card: 1 if card.suit == "♥" else 0 for card in self.deck}
+        self.card_values[Card("♠", "Q")] = 13
 
-        self.card_values = {c: 1 if c.suit == "♥" else 0 for c in self.deck}
-        self.card_values[Card("♥", "Q")] = 13
-
-        self.hands = {name: set() for name in player_ids}
+        self.hands: dict[str, set[Card]] = {player_id: set() for player_id in player_ids}
+        self.cards_taken: dict[str, set[Card]] = {player_id: set() for player_id in player_ids}
 
     def deal_cards(self, n: int, player_id: str) -> None:
         dealt_cards = random.sample(sorted(self.deck), n)

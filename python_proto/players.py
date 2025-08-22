@@ -26,8 +26,8 @@ class Player(ABC):
         self,
         hand: set[Card],
         legal_cards: set[Card],
-        trick: set[Play],
-        cards_taken: set[Card],
+        trick: list[Play],
+        cards_taken: dict[str, set[Card]],
     ) -> Card:
         pass
 
@@ -53,8 +53,8 @@ class DumbPlayer(Player):
         self,
         hand: set[Card],
         legal_cards: set[Card],
-        trick: set[Play],
-        cards_taken: set[Card],
+        trick: list[Play],
+        cards_taken: dict[str, set[Card]],
     ) -> Card:
         pass
         leading_suit = trick[0].card.suit if trick else None
@@ -118,8 +118,8 @@ class AIPlayer(Player):
         self,
         hand: set[Card],
         legal_cards: set[Card],
-        trick: set[Play],
-        cards_taken: set[Card],
+        trick: list[Play],
+        cards_taken: dict[str, set[Card]],
     ) -> Card:
         pass
         while True:
@@ -158,12 +158,12 @@ class HumanPlayer(Player):
     def pass_three_cards(self, hand: set[Card], recipient: str) -> set[Card]:
         while True:
             try:
-                cards_to_pass = input(
+                user_input = input(
                     f"Passing three cards to {recipient}. Your hand is {hand}. List cards to pass like '♦10,♣2,♥A':"
                 )
                 cards_to_pass = [
                     Card(card[0].strip(), card[1:].strip())
-                    for card in cards_to_pass.split(",")
+                    for card in user_input.split(",")
                 ]
                 assert all([card in hand for card in cards_to_pass])
                 break
@@ -177,16 +177,16 @@ class HumanPlayer(Player):
         self,
         hand: set[Card],
         legal_cards: set[Card],
-        trick: set[Play],
-        cards_taken: set[Card],
+        trick: list[Play],
+        cards_taken: dict[str, set[Card]],
     ) -> Card:
         pass
         while True:
             try:
-                played_card = input(
+                user_input = input(
                     f"It's your turn to play the trick. Your hand is {hand}. Cards you can legally play: {legal_cards}. Trick so far: {trick}. Select a card to play like '♣J':"
                 )
-                played_card = Card(played_card[0].strip(), played_card[1:].strip())
+                played_card = Card(user_input[0].strip(), user_input[1:].strip())
                 assert played_card in legal_cards
                 break
             except Exception:
