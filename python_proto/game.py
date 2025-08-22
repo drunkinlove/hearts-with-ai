@@ -240,7 +240,12 @@ if __name__ == "__main__":
     llm_client = CerebrasClient()
 
     for i in range(10):
-        player_classes: list[Type[Player]] = [AIPlayer, DumbPlayer, DumbPlayer, DumbPlayer]
+        player_classes: list[Type[Player]] = [
+            AIPlayer,
+            DumbPlayer,
+            DumbPlayer,
+            DumbPlayer,
+        ]
         player_ids: list[str] = ["Tom", "Mary", "Holly", "Joslyn"]
         players: dict[str, Player] = {}
         for player_id, player_class in zip(player_ids, player_classes):
