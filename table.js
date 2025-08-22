@@ -1,27 +1,27 @@
 import { shuffle, sample_indices, remove_by_idxs } from "./helpers.js";
 
+export const SUITS = ["♠", "♣", "♦", "♥"];
+export const RANKS = [
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "X",
+  "J",
+  "Q",
+  "K",
+  "A",
+];
+
 export class Table {
   constructor(player_ids) {
-    this.suits = ["♠", "♣", "♦", "♥"];
-    this.ranks = [
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "X",
-      "J",
-      "Q",
-      "K",
-      "A",
-    ];
-
     this.deck = [];
-    for (const suit of this.suits) {
-      for (const rank of this.ranks) {
+    for (const suit of SUITS) {
+      for (const rank of RANKS) {
         this.deck.push(`${suit}${rank}`);
       }
     }

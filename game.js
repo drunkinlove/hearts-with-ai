@@ -1,6 +1,4 @@
-import { shuffle, sample_indices, remove_by_idxs } from "./helpers.js";
-import { Table } from "./table.js";
-import { DumbPlayer } from "./players.js";
+import { Table, RANKS } from "./table.js";
 
 class Round {
   constructor(no, pass_direction) {
@@ -14,7 +12,7 @@ class Round {
   }
 }
 
-class Game {
+export class Game {
   constructor(player_ids, players) {
     this.player_ids = player_ids;
     this.players = players;
@@ -51,7 +49,7 @@ class Game {
 
     for (const [player_id, passed_cards] of passed_by_player.entries()) {
       updates.get(player_id).set("removed", passed_cards); // remove cards from the passer
-      recipient = this.round.pass_direction.get("player_id");
+      var recipient = this.round.pass_direction.get(player_id);
       updates.get(recipient).set("added", passed_cards); // add cards to the recipient
     }
 
@@ -110,7 +108,7 @@ class Game {
       return leading_suit_cards;
     }
 
-    if (this.round_trick_no === 0) {
+    if (this.round.trick_no === 0) {
       hand = hand.filter((card) => card[0] !== "♥");
       hand = hand.filter((card) => card !== "♠Q");
     }
@@ -135,7 +133,7 @@ class Game {
     var trick_taken_by = null;
 
     for (const [player_id, card] of plays_followed_suit) {
-      var current_rank = this.table.ranks.indexOf(card[1]);
+      var current_rank = RANKS.indexOf(card[1]);
       if (highest_rank < current_rank) {
         highest_rank = current_rank;
         trick_taken_by = player_id;
@@ -249,14 +247,17 @@ class Game {
     return true;
   }
 
-  play_round() {
+  async play_round() {
     this._start_round();
     const passed_cards = new Map();
-    for (const [player_id, player] in this.players.entries()) {
+    for (const [player_id, player] of this.players.entries()) {
       var pass_recipient = this.round.pass_direction.get(player_id);
       passed_cards.set(
         player_id,
-        player.pass_three_cards(this.table.hands.get(player_id), pass_recipient)
+        await player.pass_three_cards(
+          this.table.hands.get(player_id),
+          pass_recipient
+        )
       );
       console.log(
         `${player_id} passed ${passed_cards.get(player_id)} to ${pass_recipient}`
@@ -283,7 +284,7 @@ class Game {
         var player_id = this.player_ids[player_idx];
         var player = this.players.get(player_id);
         console.log(`${player_id} moves...`);
-        var played_card = player.select_card_for_trick(
+        var played_card = await player.select_card_for_trick(
           this.table.hands.get(player_id),
           this._filter_illegal_options(
             this.table.hands.get(player_id),
@@ -299,26 +300,9 @@ class Game {
     this._finish_round();
   }
 
-  play() {
+  async play() {
     while (this._game_continues()) {
-      this.play_round();
+      await this.play_round();
     }
   }
-}
-
-const player_ids = ["Tom", "Mary", "Holly", "Joslyn"];
-const player_classes = [DumbPlayer, DumbPlayer, DumbPlayer, DumbPlayer];
-const players = new Map();
-for (var i = 0; i < 4; i++) {
-  var player_id = player_ids[i];
-  var opponents = player_ids.filter((pid) => pid !== player_id);
-  players.set(
-    player_ids[i],
-    new player_classes[i](player_id, opponents, null, false, false)
-  );
-}
-
-for (var g = 0; g < 1000; g++) {
-  var game = new Game(player_ids, players);
-  game.play();
 }

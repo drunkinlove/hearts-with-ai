@@ -14,3 +14,18 @@ export function sample_indices(n, k) {
 export function remove_by_idxs(array, idxs) {
   return array.filter((_, i) => !idxs.includes(i));
 }
+
+export async function input(prompt) {
+  const readline = await import("readline");
+  const cmd = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    cmd.question(prompt, (reply) => {
+      cmd.close();
+      resolve(reply);
+    });
+  });
+}
