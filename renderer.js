@@ -66,17 +66,6 @@ function create_card(face_down, value, margins) {
   return card;
 }
 
-// function onCardClick(card) {
-//   document.querySelectorAll(".card").forEach((c) => {
-//     c.style.zIndex = "0";
-//     c.style.transform = "scale(1)";
-//   });
-//   // bring clicked card to front
-//   card.style.zIndex = "1000";
-//   card.style.transform = "translateY(-20px) scale(1.2)";
-//   card.classList.add("selected");
-// }
-
 export function clear_table(cls) {
   const table = document.getElementById("table");
 

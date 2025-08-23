@@ -3,7 +3,7 @@ import { SUITS, RANKS } from "./table.js";
 import { draw_status } from "./renderer.js";
 
 function validate_passed_cards(cards, hand) {
-  if (new Set(cards).size < 3) {
+  if (new Set(cards).size !== 3) {
     return false;
   }
   for (const card of cards) {
