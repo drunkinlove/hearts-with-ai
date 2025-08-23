@@ -4,6 +4,19 @@ import { Game } from "./game.js";
 
 var llm_client = null;
 
+const player_ids = ["Blanche", "Dorothy", "Sophia"];
+
+var user_name = prompt("Your name?");
+if (
+  (user_name === null) |
+  (user_name === "") |
+  player_ids.includes(user_name)
+) {
+  user_name = "Rose";
+}
+
+player_ids.unshift(user_name);
+
 const api_key = prompt("OpenAI API key?");
 if (api_key !== null && api_key !== "") {
   llm_client = new OpenAIClient(api_key);
@@ -11,7 +24,6 @@ if (api_key !== null && api_key !== "") {
   console.log("No api_key, falling back to traditional AI...");
 }
 
-const player_ids = ["You", "Blanche", "Dorothy", "Sophia"];
 const player_classes = [
   HumanPlayer,
   DumbPlayer,
