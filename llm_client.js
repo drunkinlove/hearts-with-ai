@@ -3,14 +3,16 @@ function preprocess_reply(reply) {
 }
 
 export class OpenAIClient {
-  constructor() {}
+  constructor(api_key) {
+    this.api_key = api_key;
+  }
 
   async get_response(system_prompt, prompt) {
     // console.log(`sending request ${prompt}...`);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: "Bearer ...",
+        Authorization: `Bearer ${this.api_key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

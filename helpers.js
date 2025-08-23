@@ -29,3 +29,15 @@ export async function input(prompt) {
     });
   });
 }
+
+export function capitalize_first_letter(val) {
+  return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
+export function margins_float_to_px(margins_float) {
+  const margins = {};
+  for (const [side, value] of Object.entries(margins_float)) {
+    margins[side] = `${value}px`;
+  }
+  return margins;
+}

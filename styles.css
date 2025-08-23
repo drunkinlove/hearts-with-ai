@@ -1,0 +1,49 @@
+body {
+    background: rgb(0, 0, 0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  #table {
+    background: rgb(10, 100, 10);
+    position: relative;
+    width: 800px;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    position: absolute;
+    width: 9%;
+    /* height: 120px; */
+    background: transparent;
+    /* border: 2px solid white; */
+    /* border-radius: 8px; */
+    /* text-align: left;
+    line-height: 15px;
+    font-weight: bold;
+    font-size: 20px; */
+    transition: transform 0.3s ease, z-index 0.3s ease;
+    object-fit: fit;
+    stroke: none
+  }
+  .card.clickable:hover {
+    transform: translateY(-10%);
+    cursor: pointer;
+  }
+  .card.selected {
+    transform: translateY(-10%);
+  }
+  .nametag {
+    position: absolute;
+    color: white;
+    object-fit: fit;
+  }
+  .status {
+    position: absolute;
+    margin-top: 33%;
+    color: white;
+    object-fit: fit;
+  }

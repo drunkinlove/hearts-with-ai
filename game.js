@@ -1,4 +1,11 @@
 import { Table, RANKS } from "./table.js";
+import {
+  draw_trick_card,
+  draw_hand,
+  clear_table,
+  draw_nametags,
+  draw_status,
+} from "./renderer.js";
 
 class Round {
   constructor(no, pass_direction) {
@@ -13,9 +20,14 @@ class Round {
 }
 
 export class Game {
-  constructor(player_ids, players) {
+  constructor(player_ids, players, renderer) {
     this.player_ids = player_ids;
     this.players = players;
+
+    const sides = ["bottom", "left", "top", "right"];
+    this.player_ids_to_sides = Object.fromEntries(
+      sides.map((s, i) => [player_ids[i], s])
+    );
 
     this.player_scores = new Map();
     player_ids.forEach((player_id) => this.player_scores.set(player_id, 0));
@@ -25,6 +37,7 @@ export class Game {
     this.round_no = -1;
     this.round = null;
     this.old_rounds = [];
+    this.renderer = renderer;
   }
 
   _calculate_whose_move() {
@@ -212,7 +225,9 @@ export class Game {
         `Player ${player_moonshot} shot the moon! Adding 26 to everyone else's score.`
       );
 
-      for (const pid of this.player_ids.filter((p) => p !== player_moonshot)) {
+      for (const player_id of this.player_ids.filter(
+        (p) => p !== player_moonshot
+      )) {
         this.player_scores.set(
           player_id,
           this.player_scores.get(player_id) + 26
@@ -241,17 +256,28 @@ export class Game {
       Array.from(this.player_scores.values().filter((x) => x === lowest_score))
         .length > 1;
     if (hundred_reached & !several_winners) {
-      console.log(`Game finished! Scores: ${[...this.player_scores]}`);
+      console.log(`Game over! Scores: ${[...this.player_scores]}`);
+
+      draw_status(`Game over!`);
       return false;
     }
     return true;
   }
 
   async play_round() {
+    var round_scores = new Map();
+    this.player_ids.forEach((player_id) => round_scores.set(player_id, 0));
+
+    draw_nametags(this.player_scores, round_scores, this.player_ids_to_sides);
+
     this._start_round();
+
+    this._draw_hands();
+
     const passed_cards = new Map();
     for (const [player_id, player] of this.players.entries()) {
       var pass_recipient = this.round.pass_direction.get(player_id);
+
       passed_cards.set(
         player_id,
         await player.pass_three_cards(
@@ -265,7 +291,14 @@ export class Game {
     }
     this._pass_cards(passed_cards);
 
+    this._draw_hands();
+
     while (this._round_continues()) {
+      this.player_ids.forEach((player_id) => {
+        round_scores.set(player_id, this._tally_score_in_round(player_id));
+      });
+      draw_nametags(this.player_scores, round_scores, this.player_ids_to_sides);
+
       var player_idx = this._calculate_whose_move();
       // var player_idx = this.player_ids.indexOf(player_id)
       var player_order = [];
@@ -293,11 +326,31 @@ export class Game {
           this.round.current_trick,
           this.table.cards_taken
         );
+
         this._make_play(player_id, played_card);
+
+        this._draw_hands();
+        draw_trick_card(this.player_ids_to_sides[player_id], played_card);
+
+        await new Promise((r) => setTimeout(r, 1000));
       }
       this._finish_trick();
+
+      clear_table("trick");
     }
     this._finish_round();
+  }
+
+  async _draw_hands() {
+    clear_table("hand");
+
+    for (var [player_id, side] of Object.entries(this.player_ids_to_sides)) {
+      draw_hand(
+        this.table.hands.get(player_id),
+        side,
+        side === "bottom" ? false : true
+      );
+    }
   }
 
   async play() {

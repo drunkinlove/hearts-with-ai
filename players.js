@@ -1,5 +1,6 @@
 import { shuffle, sample_indices, remove_by_idxs, input } from "./helpers.js";
 import { SUITS, RANKS } from "./table.js";
+import { draw_status } from "./renderer.js";
 
 function validate_passed_cards(cards, hand) {
   if (new Set(cards).size < 3) {
@@ -29,15 +30,15 @@ export class DumbPlayer {
   constructor(player_id, opponents, llm_client, count_cards, shoot_the_moon) {}
 
   async pass_three_cards(hand, recipient) {
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 100));
     const idxs = sample_indices(hand.length, 3);
     hand.filter((card) => idxs);
-    const cards_to_pass = idxs.map((idx) => hand[idx]);
+    var cards_to_pass = idxs.map((idx) => hand[idx]);
     return cards_to_pass;
   }
 
   async select_card_for_trick(hand, legal_cards, trick, cards_taken) {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 100));
     const leading_suit = trick.length !== 0 ? trick[0][1][0] : null;
     var ordered_hand = [];
     legal_cards = legal_cards.slice();
@@ -64,6 +65,84 @@ export class DumbPlayer {
 }
 
 export class HumanPlayer {
+  constructor(player_id, opponents, llm_client, count_cards, shoot_the_moon) {}
+
+  async pass_three_cards(hand, recipient) {
+    draw_status(`Pass three cards to ${recipient}.`);
+    var cards_to_pass = [];
+    const playable_card_elements = document.querySelectorAll(".playable");
+
+    return new Promise((resolve) => {
+      var value = null;
+      function on_click(card) {
+        value = card.srcElement.dataset.value;
+
+        if ([...card.srcElement.classList].includes("selected")) {
+          // card.srcElement.style.zIndex = "0";
+          // card.srcElement.style.transform = "scale(1)";
+          cards_to_pass = cards_to_pass.filter((v) => v !== value);
+          card.srcElement.classList.remove("selected");
+          console.log(`${value} deselected`);
+        } else {
+          // card.srcElement.style.zIndex = "1000";
+          // card.srcElement.style.transform = "translateY(-20px) scale(1.2)";
+          cards_to_pass.push(value);
+          card.srcElement.classList.add("selected");
+          console.log(`${value} selected`);
+        }
+
+        if (cards_to_pass.length === 3) {
+          playable_card_elements.forEach((c) =>
+            c.removeEventListener("click", on_click)
+          );
+
+          draw_status(``);
+          resolve(cards_to_pass); // resolve the promise with selected cards
+        }
+      }
+
+      // attach click listeners to cards in hand
+      playable_card_elements.forEach((card) => {
+        card.classList.add("clickable");
+        card.addEventListener("click", on_click);
+      });
+    });
+  }
+
+  async select_card_for_trick(hand, legal_cards, trick, cards_taken) {
+    draw_status(`Play a card.`);
+
+    var played_card = null;
+    const playable_card_elements = [
+      ...document.querySelectorAll(".playable"),
+    ].filter((c) => legal_cards.includes(c.dataset.value));
+
+    return new Promise((resolve) => {
+      function on_click(card) {
+        card.srcElement.style.zIndex = "1000";
+        card.srcElement.style.transform = "translateY(-20px) scale(1.2)";
+        played_card = card.srcElement.dataset.value;
+        card.srcElement.classList.add("selected");
+        console.log(`${card.srcElement.dataset.value} selected`);
+
+        playable_card_elements.forEach((c) =>
+          c.removeEventListener("click", on_click)
+        );
+
+        draw_status(``);
+        resolve(played_card); // resolve the promise with selected cards
+      }
+
+      // attach click listeners to cards in hand
+      playable_card_elements.forEach((card) => {
+        card.classList.add("clickable");
+        card.addEventListener("click", on_click);
+      });
+    });
+  }
+}
+
+export class HumanConsolePlayer {
   constructor(player_id, opponents, llm_client, count_cards, shoot_the_moon) {}
 
   async pass_three_cards(hand, recipient) {
@@ -114,25 +193,32 @@ export class AIPlayer {
   }
 
   async pass_three_cards(hand, recipient) {
+    draw_status(`${this.player_id} is thinking...`);
     var prompt = `Choose 3 cards to pass to ${recipient}. Your hand: ${hand}. Reply ONLY with a list of cards to pass like: '♦10,♣2,♥A'.`;
 
     var validated = false;
     while (!validated) {
-      var reply = await this.llm_client.get_response(
-        this.system_prompt,
-        prompt
-      );
-      var cards_to_pass = reply.split(",");
-      if (validate_passed_cards(cards_to_pass, hand)) {
-        validated = true;
-      } else {
-        console.log(`Trying again in ${this.period}s...`);
+      try {
+        var reply = await this.llm_client.get_response(
+          this.system_prompt,
+          prompt
+        );
+        var cards_to_pass = reply.split(",");
+        if (validate_passed_cards(cards_to_pass, hand)) {
+          validated = true;
+        } else {
+          throw new Error("didn't pass game rule validation");
+        }
+      } catch (e) {
+        console.log(`Trying again in ${this.period}s... (${e})`);
       }
     }
+    draw_status(``);
     return cards_to_pass;
   }
 
   async select_card_for_trick(hand, legal_cards, trick, cards_taken) {
+    draw_status(`${this.player_id} is thinking...`);
     var prompt = `Choose a card to play in current trick. The trick so far: ${trick}. Your hand: ${hand}. Cards you can legally play: ${legal_cards}\n`;
     if (this.count_cards) {
       prompt =
@@ -145,17 +231,22 @@ export class AIPlayer {
 
     var validated = false;
     while (!validated) {
-      var reply = await this.llm_client.get_response(
-        this.system_prompt,
-        prompt
-      );
-      var played_card = reply;
-      if (validate_played_card(played_card, legal_cards)) {
-        validated = true;
-      } else {
-        console.log(`Trying again in ${this.period}s...`);
+      try {
+        var reply = await this.llm_client.get_response(
+          this.system_prompt,
+          prompt
+        );
+        var played_card = reply;
+        if (validate_played_card(played_card, legal_cards)) {
+          validated = true;
+        } else {
+          throw new Error("didn't pass game rule validation");
+        }
+      } catch (e) {
+        console.log(`Trying again in ${this.period}s... (${e})`);
       }
     }
+    draw_status(``);
     return played_card;
   }
 }
